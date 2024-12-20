@@ -145,7 +145,7 @@ class CartPoleEnv:
         """Reset the environment state."""
         x = 0
         x_dot = 0
-        theta = 180
+        theta = 140
         theta_dot = 0
 
         self.state = (x,x_dot,-math.radians(theta),theta_dot)#np.random.uniform(low=-0.05, high=0.05, size=(4,))
@@ -304,12 +304,13 @@ class HybridController(Controller):
         else:
             raw_force = self.lqr_controller.compute_action(state, **kwargs)
             # Limit initial LQR force to prevent spikes
-            force = np.clip(raw_force, -5.0, 5.0)  # Start with smaller force limits
+            force = np.clip(raw_force, -10.0, 10.0)  # Start with smaller force limits
             
         return force
 
-
-def main():
+############################################################################################################################
+"""Below main functions simulates one initial condition and plots it """
+"""def main():
     # Create environment with custom physics parameters
     params = PhysicsParams(
         cart_friction=.5,
@@ -392,7 +393,7 @@ def main():
         plt.legend()
         
         # Plot controller phase
-        """plt.subplot(2, 2, 4)
+        plt.subplot(2, 2, 4)
         phase_numeric = [1 if p == "lqr" else 0 for p in controller_phase]
         plt.plot(time_points, phase_numeric, 'k-', label='Controller Phase')
         plt.grid(True)
@@ -400,10 +401,154 @@ def main():
         plt.xlabel('Time (s)')
         plt.yticks([0, 1], ['Swing-up', 'LQR'])
         plt.title('Active Controller over Time')
-        plt.legend()"""
+        plt.legend()
         
         plt.tight_layout()
-        plt.show()
+        plt.show()"""
+
+
+################################################################################################################################
+"""Below functions iterates throug several initial conditions and simulates without rendering"""
+
+
+
+def main():
+    # Create environment with custom physics parameters
+    params = PhysicsParams(
+        cart_friction=.5,
+        pole_friction=0.05,
+    )
+    
+    # List of initial angles to test (in radians)
+    initial_angles = [np.radians(180), np.radians(170), np.radians(160), np.radians(150), np.radians(140), np.radians(130), np.radians(120),np.radians(110), np.radians(100), np.radians(90), np.radians(80),
+                      np.radians(70),np.radians(60), np.radians(50), np.radians(40), np.radians(30)]  # Modify as needed
+    
+    # Dictionary to store results for each initial angle
+    all_results = {}
+    
+    for initial_angle in initial_angles:
+        # Create hybrid controller and environment
+        controller = HybridController(params)
+        env = CartPoleEnv(physics_params=params, controller=controller)
+        
+        # Lists to store state history
+        time_points = []
+        x_history = []
+        theta_history = []
+        
+        done = False
+        running = True
+        t = 0
+        
+        # Reset with initial angle
+        initial_state = np.array([0.0, 0.0, initial_angle, 0.0])
+        env.reset()
+        env.state = initial_state  # Directly set the state after reset
+        
+        # Variables for stability detection
+        stability_window = 3.0  # seconds
+        stability_threshold = 0.1  # radians and meters
+        stable_start_time = None
+        
+        try:
+            while running:
+                for event in pygame.event.get():
+                    if event.type == pygame.QUIT:
+                        running = False
+                
+                if not done:
+                    # Get control action from hybrid controller
+                    action = controller.compute_action(
+                        env.state,
+                        keys=pygame.key.get_pressed()
+                    )
+                    
+                    # Step environment
+                    state, done, info = env.step(action)
+                    
+                    # Store state history
+                    time_points.append(t)
+                    x_history.append(state[0])
+                    theta_history.append(state[2])
+                    
+                    # Check for stability
+                    if (abs(state[0]) < stability_threshold and 
+                        abs(state[1]) < stability_threshold and
+                        abs(state[2]) < stability_threshold and 
+                        abs(state[3]) < stability_threshold):
+                        
+                        if stable_start_time is None:
+                            stable_start_time = t
+                        elif t - stable_start_time >= stability_window:
+                            running = False
+                    else:
+                        stable_start_time = None
+                    
+                    t += env.dt
+                    
+                    # Render
+                    #env.visualizer.render(state, info['force'])
+                    
+                    # Optional: Add timeout condition
+                    if t > 30.0:  # Maximum 30 seconds per trial
+                        running = False
+                
+        finally:
+            env.visualizer.close()
+            
+            # Store results for this initial angle
+            all_results[initial_angle] = {
+                'time': time_points,
+                'x': x_history,
+                'theta': theta_history
+            }
+    
+    # Clean up pygame after all simulations
+    pygame.quit()
+    
+    # Plot combined results
+    plt.figure(figsize=(15, 8))
+
+    # Plot cart positions
+    plt.subplot(2, 1, 1)
+    for angle, data in all_results.items():
+        # Find indices for first 12 seconds
+        time_mask = np.array(data['time']) <= 12.0
+        
+        angle_deg = angle * 180/np.pi
+        plt.plot(np.array(data['time'])[time_mask], 
+                np.array(data['x'])[time_mask], 
+                label=f'Initial angle: {angle_deg:.1f}°')
+    plt.grid(True)
+    plt.ylabel('Position (m)')
+    plt.title('Cart Position over Time')
+    #plt.legend()
+    plt.xlim(0, 12)  # Set x-axis limits explicitly
+
+    # Plot pole angles
+    plt.subplot(2, 1, 2)
+    for angle, data in all_results.items():
+        # Find indices for first 12 seconds
+        time_mask = np.array(data['time']) <= 12.0
+        
+        angle_deg = angle * 180/np.pi
+        plt.plot(np.array(data['time'])[time_mask], 
+                np.array([theta * 180/np.pi for theta in data['theta']])[time_mask], 
+                label=f'Initial angle: {angle_deg:.1f}°')
+    plt.grid(True)
+    plt.ylabel('Angle (degrees)')
+    plt.xlabel('Time (s)')
+    plt.title('Pole Angle over Time')
+    #plt.legend()
+    plt.xlim(0, 12)  # Set x-axis limits explicitly
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+    
 
 if __name__ == "__main__":
     main()
+ 
