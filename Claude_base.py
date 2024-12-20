@@ -6,7 +6,6 @@ import numpy as np
 from abc import ABC, abstractmethod
 from typing import Tuple, Dict, Optional, List
 from dataclasses import dataclass
-import cvxpy as cp
 from scipy import sparse
 
 
