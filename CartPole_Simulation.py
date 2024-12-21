@@ -14,8 +14,8 @@ class PhysicsParams:
     """Physical parameters of the cart-pole system."""
     gravity: float = 9.81
     cart_mass: float = 1.0
-    pole_mass: float = 0.1
-    pole_length: float = 1.0
+    pole_mass: float = .1
+    pole_length: float = 1
     cart_friction: float = 0.5  # Friction coefficient for cart
     pole_friction: float = .05  # Friction coefficient for pole rotation
     max_force: float = 50.0
@@ -145,7 +145,7 @@ class CartPoleEnv:
         """Reset the environment state."""
         x = 0
         x_dot = 0
-        theta = 140
+        theta = 5
         theta_dot = 0
 
         self.state = (x,x_dot,-math.radians(theta),theta_dot)#np.random.uniform(low=-0.05, high=0.05, size=(4,))
@@ -310,7 +310,7 @@ class HybridController(Controller):
 
 ############################################################################################################################
 """Below main functions simulates one initial condition and plots it """
-"""def main():
+def main():
     # Create environment with custom physics parameters
     params = PhysicsParams(
         cart_friction=.5,
@@ -393,7 +393,7 @@ class HybridController(Controller):
         plt.legend()
         
         # Plot controller phase
-        plt.subplot(2, 2, 4)
+        """plt.subplot(2, 2, 4)
         phase_numeric = [1 if p == "lqr" else 0 for p in controller_phase]
         plt.plot(time_points, phase_numeric, 'k-', label='Controller Phase')
         plt.grid(True)
@@ -401,10 +401,10 @@ class HybridController(Controller):
         plt.xlabel('Time (s)')
         plt.yticks([0, 1], ['Swing-up', 'LQR'])
         plt.title('Active Controller over Time')
-        plt.legend()
+        plt.legend()"""
         
         plt.tight_layout()
-        plt.show()"""
+        plt.show()
 
 
 ################################################################################################################################
@@ -412,7 +412,7 @@ class HybridController(Controller):
 
 
 
-def main():
+"""def main():
     # Create environment with custom physics parameters
     params = PhysicsParams(
         cart_friction=.5,
@@ -543,7 +543,7 @@ def main():
     plt.xlim(0, 12)  # Set x-axis limits explicitly
 
     plt.tight_layout()
-    plt.show()
+    plt.show()"""
 
 
 
